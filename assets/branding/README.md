@@ -1,8 +1,22 @@
-# Logo assets
+# Berberim İrfan — Mobile logo assets
 
-- `berberim_logo.svg`: square 1024×1024 scalable gold monogram for app branding.
-- Use the SVG as the source artwork and export PNG variants for platform-specific launcher/icon catalogs.
-- Android launcher icon exports: 192×192 (legacy), plus adaptive icon foreground/background as required by the Android project.
-- iOS app icon export: 1024×1024 PNG; generate the required asset-catalog sizes through Xcode.
+The mobile-ready logo package was prepared from the exact image supplied by the owner.
+It preserves the original gold **iK** monogram, diagonal stroke, broken circular outline,
+dark textured background, and proportions. The artwork was cropped from the original
+photo and gently sharpened/upscaled; it was not redrawn with substitute lettering.
 
-Keep the logo centered and preserve its square aspect ratio. Do not stretch it.
+## Package contents
+
+See the downloadable `berberim_irfan_mobile_assets.zip` package supplied with this task.
+
+- Master: 2048×2048 PNG and 1024×1024 PNG
+- Android: 48, 72, 96, 144, 192 px launcher variants and 432 px adaptive foreground
+- iOS: 20, 29, 40, 58, 60, 76, 80, 87, 120, 152, 167, 180, 1024 px variants
+- iOS starter `Contents.json`
+
+## Integration recommendation
+
+Use the 1024×1024 PNG as the single source image for the Flutter launcher icon
+generator, then build and inspect Android adaptive masks and the iOS AppIcon catalog.
+The current repository did not contain an application source tree, so the image assets
+have not yet been wired into a Flutter project.
