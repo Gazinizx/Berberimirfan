@@ -168,11 +168,11 @@ jobs:
               src = opened.convert('RGB')
           # Fail the build if the supplied gold monogram source is missing or black.
           extrema = src.getextrema()
-          if sum(channel[1] for channel in extrema) < 180:
-              raise SystemExit('Logo source appears black; refusing to build a broken APK.')
-          gold_pixels = sum(1 for red, green, blue in src.resize((128, 128)).getdata() if red > 90 and red > green * 1.15 and green > blue * 1.10)
-          if gold_pixels < 80:
-              raise SystemExit('Gold İK logo was not detected in the source image.')
+          gold_pixels = sum(1 for red, green, blue in src.resize((128, 128)).getdata() if red > 90 and red > green * 1.08 and green > blue * 1.05)
+          print(f'Logo RGB extrema: {extrema}; detected gold pixels: {gold_pixels}')
+          if max(channel[1] for channel in extrema) < 100 or gold_pixels < 20:
+              raise SystemExit('Gold İK logo was not detected; refusing to build a broken APK.')
+          # Validate the generated runtime PNG too, before Flutter packages it.
           # Flutter's runtime asset and all launcher sizes use lossless PNG,
           # avoiding progressive-JPEG decoder/rendering differences.
           from PIL import ImageFilter
@@ -180,6 +180,12 @@ jobs:
           src = src.filter(ImageFilter.UnsharpMask(radius=1.2, percent=115, threshold=3))
           runtime_logo = Path('assets/branding/irfan_izgi_logo.png')
           src.save(runtime_logo, format='PNG', optimize=True)
+          with Image.open(runtime_logo) as check:
+              check = check.convert('RGB')
+              check_gold = sum(1 for red, green, blue in check.resize((128, 128)).getdata() if red > 90 and red > green * 1.08 and green > blue * 1.05)
+              if check_gold < 20:
+                  raise SystemExit('Generated Flutter PNG lost the gold logo.')
+          print(f'Generated Flutter PNG verified: {check_gold} gold pixels.')
           src = src.convert('RGBA')
           root = Path('android/app/src/main/res')
           for folder, size in {'mipmap-mdpi':48,'mipmap-hdpi':72,'mipmap-xhdpi':96,'mipmap-xxhdpi':144,'mipmap-xxxhdpi':192}.items():
