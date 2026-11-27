@@ -336,7 +336,7 @@ class BrandMark extends StatelessWidget {
         gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [goldLight, gold]),
         boxShadow: [BoxShadow(color: gold.withValues(alpha: .17), blurRadius: 24, offset: const Offset(0, 9))],
       ),
-      child: ClipRRect(borderRadius: BorderRadius.circular(compact ? 17 : 21), child: Image.asset('assets/branding/irfan_izgi_logo.jpg', width: compact ? 54 : 68, height: compact ? 54 : 68, fit: BoxFit.cover)),
+      child: ClipRRect(borderRadius: BorderRadius.circular(compact ? 17 : 21), child: Image.asset('assets/branding/irfan_izgi_logo.png', width: compact ? 54 : 68, height: compact ? 54 : 68, fit: BoxFit.cover)),
     ),
     const SizedBox(height: 12),
     const Text('İRFAN İZGİ', style: TextStyle(fontSize: 23, fontWeight: FontWeight.w900, letterSpacing: 2.2)),
@@ -2018,7 +2018,7 @@ class _CustomerPageState extends State<CustomerPage>{
  }
  @override Widget build(BuildContext c)=>Scaffold(
   appBar:AppBar(
-   title:Row(children:[ClipRRect(borderRadius:BorderRadius.circular(11),child:Image.asset('assets/branding/irfan_izgi_logo.jpg',width:34,height:34,fit:BoxFit.cover)),const SizedBox(width:10),const Text('İrfan İzgi',style:TextStyle(fontWeight:FontWeight.w900,letterSpacing:-.5))]),
+   title:Row(children:[ClipRRect(borderRadius:BorderRadius.circular(11),child:Image.asset('assets/branding/irfan_izgi_logo.png',width:34,height:34,fit:BoxFit.cover)),const SizedBox(width:10),const Text('İrfan İzgi',style:TextStyle(fontWeight:FontWeight.w900,letterSpacing:-.5))]),
    actions:[
     IconButton(tooltip:'Randevularım',onPressed:()=>Navigator.of(context).push(MaterialPageRoute(builder:(_)=>const CustomerAppointmentsPage())),icon:const Icon(Icons.event_note_rounded)),
     notificationAction(context),

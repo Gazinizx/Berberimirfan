@@ -38,8 +38,10 @@ jobs:
           with Image.open(logo_path) as opened:
               opened.load()
               clean = opened.convert('RGB')
-          clean.save(logo_path, format='JPEG', quality=95, optimize=True, progressive=True)
+          from PIL import ImageFilter
           image = clean.resize((1024,1024), Image.Resampling.LANCZOS)
+          image = image.filter(ImageFilter.UnsharpMask(radius=1.2, percent=115, threshold=3))
+          image.save('assets/branding/irfan_izgi_logo.png', format='PNG', optimize=True)
           folder = Path('ios/Runner/Assets.xcassets/AppIcon.appiconset')
           folder.mkdir(parents=True, exist_ok=True)
           image.save(folder/'AppIcon.png', optimize=True)

@@ -164,10 +164,15 @@ jobs:
           logo_path = Path('assets/branding/irfan_izgi_logo.jpg')
           with Image.open(logo_path) as opened:
               opened.load()
-              src = opened.convert('RGBA')
-          # Normalize the supplied source once so both app runtime and launcher icons
-          # use a valid, fully decodable image.
-          src.convert('RGB').save(logo_path, format='JPEG', quality=95, optimize=True, progressive=True)
+              src = opened.convert('RGB')
+          # Flutter's runtime asset and all launcher sizes use lossless PNG,
+          # avoiding progressive-JPEG decoder/rendering differences.
+          from PIL import ImageFilter
+          src = src.resize((1024, 1024), Image.Resampling.LANCZOS)
+          src = src.filter(ImageFilter.UnsharpMask(radius=1.2, percent=115, threshold=3))
+          runtime_logo = Path('assets/branding/irfan_izgi_logo.png')
+          src.save(runtime_logo, format='PNG', optimize=True)
+          src = src.convert('RGBA')
           root = Path('android/app/src/main/res')
           for folder, size in {'mipmap-mdpi':48,'mipmap-hdpi':72,'mipmap-xhdpi':96,'mipmap-xxhdpi':144,'mipmap-xxxhdpi':192}.items():
               out = root / folder

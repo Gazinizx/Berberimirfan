@@ -21,4 +21,4 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - assets/branding/irfan_izgi_logo.jpg
+    - assets/branding/irfan_izgi_logo.png
