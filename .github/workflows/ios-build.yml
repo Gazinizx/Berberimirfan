@@ -27,12 +27,19 @@ jobs:
           if [ ! -d ios ]; then flutter create --platforms=ios --org com.gazinizx --project-name=berberim .; fi
       - name: Generate iOS app icon
         run: |
-          python3 -m pip install --user Pillow
-          python3 - <<'PY'
+          python3 -m venv .venv-logo
+          .venv-logo/bin/python -m pip install --upgrade pip Pillow
+          .venv-logo/bin/python - <<'PY'
           from pathlib import Path
-          from PIL import Image
+          from PIL import Image, ImageFile
           import json
-          image = Image.open('assets/branding/irfan_izgi_logo.jpg').convert('RGB').resize((1024,1024), Image.Resampling.LANCZOS)
+          ImageFile.LOAD_TRUNCATED_IMAGES = True
+          logo_path = Path('assets/branding/irfan_izgi_logo.jpg')
+          with Image.open(logo_path) as opened:
+              opened.load()
+              clean = opened.convert('RGB')
+          clean.save(logo_path, format='JPEG', quality=95, optimize=True, progressive=True)
+          image = clean.resize((1024,1024), Image.Resampling.LANCZOS)
           folder = Path('ios/Runner/Assets.xcassets/AppIcon.appiconset')
           folder.mkdir(parents=True, exist_ok=True)
           image.save(folder/'AppIcon.png', optimize=True)

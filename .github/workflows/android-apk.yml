@@ -159,8 +159,15 @@ jobs:
           python3 -m pip install --user Pillow
           python3 - <<'PY'
           from pathlib import Path
-          from PIL import Image
-          src = Image.open('assets/branding/irfan_izgi_logo.jpg').convert('RGBA')
+          from PIL import Image, ImageFile
+          ImageFile.LOAD_TRUNCATED_IMAGES = True
+          logo_path = Path('assets/branding/irfan_izgi_logo.jpg')
+          with Image.open(logo_path) as opened:
+              opened.load()
+              src = opened.convert('RGBA')
+          # Normalize the supplied source once so both app runtime and launcher icons
+          # use a valid, fully decodable image.
+          src.convert('RGB').save(logo_path, format='JPEG', quality=95, optimize=True, progressive=True)
           root = Path('android/app/src/main/res')
           for folder, size in {'mipmap-mdpi':48,'mipmap-hdpi':72,'mipmap-xhdpi':96,'mipmap-xxhdpi':144,'mipmap-xxxhdpi':192}.items():
               out = root / folder
@@ -182,7 +189,7 @@ jobs:
           if 'android:icon=' not in text:
               text = text.replace('<application', '<application android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round"', 1)
               manifest.write_text(text)
-          print('Android launcher and adaptive icons generated from the supplied logo.')
+          print('Android launcher and adaptive icons generated from the supplied logo; source image normalized.')
           PY
       - name: Configure email confirmation deep link
         run: |
