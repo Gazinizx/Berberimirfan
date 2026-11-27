@@ -156,7 +156,14 @@ jobs:
           print("Android app display name set to İrfan İzgi.")
           PY
       - name: Generate Android launcher icons
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          curl --fail --location --silent --show-error \\
+            -H "Authorization: Bearer ${GH_TOKEN}" \\
+            -H "Accept: application/vnd.github.raw+json" \\
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/contents/assets/branding/irfan_izgi_logo.jpg?ref=${GITHUB_SHA}" \\
+            --output assets/branding/irfan_izgi_logo.jpg
           python3 -m pip install --user Pillow
           python3 - <<'PY'
           from pathlib import Path
