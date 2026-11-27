@@ -166,6 +166,13 @@ jobs:
           with Image.open(logo_path) as opened:
               opened.load()
               src = opened.convert('RGB')
+          # Fail the build if the supplied gold monogram source is missing or black.
+          extrema = src.getextrema()
+          if sum(channel[1] for channel in extrema) < 180:
+              raise SystemExit('Logo source appears black; refusing to build a broken APK.')
+          gold_pixels = sum(1 for red, green, blue in src.resize((128, 128)).getdata() if red > 90 and red > green * 1.15 and green > blue * 1.10)
+          if gold_pixels < 80:
+              raise SystemExit('Gold İK logo was not detected in the source image.')
           # Flutter's runtime asset and all launcher sizes use lossless PNG,
           # avoiding progressive-JPEG decoder/rendering differences.
           from PIL import ImageFilter
