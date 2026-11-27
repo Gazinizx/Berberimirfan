@@ -1,0 +1,153 @@
+name: Build iOS App (unsigned)
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select Xcode 26.6 for Firebase iOS SDK
+        run: |
+          sudo xcode-select --switch /Applications/Xcode_26.6.app/Contents/Developer
+          xcodebuild -version
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: Prepare iOS platform
+        run: |
+          if [ ! -d ios ]; then flutter create --platforms=ios --org com.gazinizx --project-name=berberim .; fi
+      - name: Generate iOS app icon
+        run: |
+          python3 -m pip install --user Pillow
+          python3 - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+          import json
+          image = Image.open('assets/branding/irfan_izgi_logo.jpg').convert('RGB').resize((1024,1024), Image.Resampling.LANCZOS)
+          folder = Path('ios/Runner/Assets.xcassets/AppIcon.appiconset')
+          folder.mkdir(parents=True, exist_ok=True)
+          image.save(folder/'AppIcon.png', optimize=True)
+          (folder/'Contents.json').write_text(json.dumps({'images':[{'filename':'AppIcon.png','idiom':'universal','platform':'ios','size':'1024x1024','scale':'1x'}],'info':{'author':'xcode','version':1}}, ensure_ascii=False, indent=2))
+          print('iOS App Store icon generated from the supplied logo.')
+          PY
+      - name: Configure Firebase iOS push notifications
+        run: |
+          set -euo pipefail
+          test -f firebase/GoogleService-Info.plist
+          cp firebase/GoogleService-Info.plist ios/Runner/GoogleService-Info.plist
+          gem install xcodeproj --no-document
+          ruby - <<'RUBY'
+          require 'xcodeproj'
+
+          project_path = 'ios/Runner.xcodeproj'
+          project = Xcodeproj::Project.open(project_path)
+          target = project.targets.find { |candidate| candidate.name == 'Runner' }
+          raise 'Runner target was not found in the iOS project' unless target
+
+          runner_group = project.main_group.find_subpath('Runner', true)
+          file_ref = runner_group.files.find { |file| file.path == 'GoogleService-Info.plist' }
+          file_ref ||= runner_group.new_file('GoogleService-Info.plist')
+          unless target.resources_build_phase.files_references.include?(file_ref)
+            target.resources_build_phase.add_file_reference(file_ref)
+          end
+
+          # xcodeproj does not expose PBXNativeTarget#add_capability.
+          # Write the same capability metadata into the Xcode project directly.
+          project.root_object.attributes['TargetAttributes'] ||= {}
+          target_attributes = project.root_object.attributes['TargetAttributes'][target.uuid] ||= {}
+          target_attributes['SystemCapabilities'] ||= {}
+          target_attributes['SystemCapabilities']['com.apple.Push'] = { 'enabled' => 1 }
+          target_attributes['SystemCapabilities']['com.apple.BackgroundModes'] = { 'enabled' => 1 }
+          project.save
+          puts 'Firebase plist and iOS Push Notifications / Background Modes capabilities added to Runner.'
+          RUBY
+          python3 - <<'PY'
+          import plistlib
+          from pathlib import Path
+
+          firebase_plist = plistlib.loads(Path('firebase/GoogleService-Info.plist').read_bytes())
+          if firebase_plist.get('BUNDLE_ID') != 'com.gazinizx.berberim':
+              raise SystemExit('GoogleService-Info.plist bundle identifier does not match Berberim')
+
+          info_path = Path('ios/Runner/Info.plist')
+          info = plistlib.loads(info_path.read_bytes())
+          info['CFBundleDisplayName'] = 'İrfan İzgi'
+          info['FirebaseMessagingInstallationIdEnabled'] = True
+          info['UIBackgroundModes'] = sorted(set(info.get('UIBackgroundModes', [])) | {'fetch', 'remote-notification'})
+          info['NSCameraUsageDescription'] = 'İşletme QR kodunu tarayarak Berberim\'e katılmak için kamera erişimi gerekir.'
+
+          url_types = info.get('CFBundleURLTypes', [])
+          if not any('berberim' in item.get('CFBundleURLSchemes', []) for item in url_types):
+              url_types.append({'CFBundleURLSchemes': ['berberim']})
+          info['CFBundleURLTypes'] = url_types
+          info_path.write_bytes(plistlib.dumps(info))
+
+          copied = plistlib.loads(Path('ios/Runner/GoogleService-Info.plist').read_bytes())
+          if copied.get('GOOGLE_APP_ID') != firebase_plist.get('GOOGLE_APP_ID'):
+              raise SystemExit('GoogleService-Info.plist was not copied correctly')
+          check = plistlib.loads(info_path.read_bytes())
+          if check.get('FirebaseMessagingInstallationIdEnabled') is not True:
+              raise SystemExit('Firebase Installation ID registration is not enabled for iOS')
+          if not {'fetch', 'remote-notification'}.issubset(set(check.get('UIBackgroundModes', []))):
+              raise SystemExit('iOS remote notification background modes are missing')
+          print('iOS Firebase configuration verified.')
+          PY
+      - name: Set iOS deployment target
+        run: |
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+
+          podfile = Path("ios/Podfile")
+          pod_text = podfile.read_text()
+          pod_text, count = re.subn(
+              r"^\s*#?\s*platform :ios,.*$",
+              "platform :ios, '15.5'",
+              pod_text,
+              count=1,
+              flags=re.MULTILINE,
+          )
+          if count == 0:
+              pod_text = "platform :ios, '15.5'\n" + pod_text
+          podfile.write_text(pod_text)
+
+          project = Path("ios/Runner.xcodeproj/project.pbxproj")
+          project_text = project.read_text()
+          project_text, count = re.subn(
+              r"IPHONEOS_DEPLOYMENT_TARGET = [0-9.]+;",
+              "IPHONEOS_DEPLOYMENT_TARGET = 15.5;",
+              project_text,
+          )
+          if count == 0:
+              raise SystemExit("No iOS deployment target found in Xcode project")
+          project.write_text(project_text)
+
+          if "platform :ios, '15.5'" not in podfile.read_text():
+              raise SystemExit("Podfile iOS platform was not raised to 15.5")
+          if "IPHONEOS_DEPLOYMENT_TARGET = 15.5;" not in project.read_text():
+              raise SystemExit("Xcode iOS deployment target was not raised to 15.5")
+          print(f"iOS deployment target set to 15.5 in Podfile and {count} Xcode build settings.")
+          PY
+      - name: Install dependencies
+        run: flutter pub get
+      - name: Analyze Dart
+        run: flutter analyze --no-pub --no-fatal-infos --no-fatal-warnings
+      - name: Build unsigned iOS app
+        run: |
+          flutter build ios --release --no-codesign \
+            --dart-define=SUPABASE_URL=https://esnrbyegnxykvsghsjjq.supabase.co \
+            --dart-define=SUPABASE_PUBLISHABLE_KEY=sb_publishable_cxdhKUO8dybl-RrK-WqK6w_f6nVDz_v
+      - uses: actions/upload-artifact@v4
+        with:
+          name: irfan-izgi-ios-app-unsigned
+          path: build/ios/iphoneos/Runner.app
+          if-no-files-found: error
