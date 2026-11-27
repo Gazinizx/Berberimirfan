@@ -25,7 +25,8 @@ jobs:
           cache: true
       - name: Prepare Android platform
         run: |
-          if [ ! -d android ]; then flutter create --platforms=android --org com.gazinizx --project-name berberim .; fi
+          if [ ! -d android ]; then flutter create --platforms=android --org com.irfanizgi --project-name app .; fi
+          test "$(grep -o 'package_name[^,]*' firebase/google-services.json | head -1)" = 'package_name": "com.irfanizgi.app"' || { echo 'Firebase Android package config mismatch'; exit 1; }
       - name: Pin Android Gradle Plugin to lint fix release
         run: |
           python3 - <<'PY'
@@ -127,7 +128,7 @@ jobs:
               text = text[:point] + permission + "\n    " + text[point:]
 
           metadata = [
-              '<meta-data android:name="com.google.firebase.messaging.default_notification_channel_id" android:value="berberim_notifications" />',
+              '<meta-data android:name="com.google.firebase.messaging.default_notification_channel_id" android:value="irfanizgi_notifications" />',
               '<meta-data android:name="com.google.firebase.messaging.default_notification_icon" android:resource="@mipmap/ic_launcher" />',
               '<meta-data android:name="firebase_messaging_installation_id_enabled" android:value="true" />',
           ]
@@ -214,14 +215,14 @@ jobs:
                       <action android:name="android.intent.action.VIEW" />
                       <category android:name="android.intent.category.DEFAULT" />
                       <category android:name="android.intent.category.BROWSABLE" />
-                      <data android:scheme="berberim" android:host="login-callback" />
+                      <data android:scheme="irfanizgi" android:host="login-callback" />
                   </intent-filter>
               '''
               s = s[:close] + block + s[close:]
               p.write_text(s)
-          if 'android:scheme="berberim"' not in p.read_text():
-              raise SystemExit("Berberim auth deep link not configured")
-          print("Android email confirmation deep link configured.")
+          if 'android:scheme="irfanizgi"' not in p.read_text():
+              raise SystemExit("İrfan İzgi auth deep link not configured")
+          print("İrfan İzgi Android email confirmation deep link configured.")
           PY
       - name: Ensure release internet permission
         run: |

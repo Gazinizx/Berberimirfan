@@ -6,6 +6,10 @@ on:
     branches: [main]
   push:
     branches: [main]
+    paths-ignore:
+      - ".github/workflows/android-apk.yml"
+      - ".github/workflows/ios-build.yml"
+      - "firebase/google-services.json"
 
 permissions:
   contents: read
