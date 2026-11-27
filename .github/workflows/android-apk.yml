@@ -148,7 +148,7 @@ jobs:
           from pathlib import Path
           p = Path("android/app/src/main/AndroidManifest.xml")
           s = p.read_text()
-          s, count = re.subn(r'android:label="[^"]+"', 'android:label="Berberim"', s, count=1)
+          s, count = re.subn(r'android:label="[^"]+"', 'android:label="İrfan İzgi"', s, count=1)
           if count != 1:
               raise SystemExit("Android app label was not found")
           p.write_text(s)
